@@ -14,6 +14,7 @@ parser IngressParserImpl(packet_in buffer,
                          in empty_t recirculate_meta)
 {
     state start {
+        /* extract ethernet header */
         buffer.extract(parsed_hdr.ethernet);
         transition select(parsed_hdr.ethernet.etherType) {
             ETH_TYPE_IPV4:  parse_ipv4;
@@ -22,6 +23,7 @@ parser IngressParserImpl(packet_in buffer,
     }
 
     state parse_ipv4 {
+        /* extract IPv4 header */
         buffer.extract(parsed_hdr.ipv4);
         transition select(parsed_hdr.ipv4.protocol){
             IP_PROTO_UDP:   parse_udp;
@@ -30,18 +32,19 @@ parser IngressParserImpl(packet_in buffer,
     }
 
     state parse_udp {
+        /* extract UDP header */
         buffer.extract(parsed_hdr.udp);
+        /* determine if this packet is carrying INT header from the DSCP field */
         transition select(parsed_hdr.ipv4.dscp){
-            DSCP_INT: parse_int;
+            DSCP_INT: parse_int;  // DSCP indicates if the packet is carrying INT
             default: accept;
         }
     }
 
     state parse_int {
+        /* extract the shim header and INT metadata header */
         buffer.extract(parsed_hdr.int_shim);
         buffer.extract(parsed_hdr.int_md);
-        /* int_total_length doesn't include the shim header (1 word) */
-        // meta.int_shim_len = parsed_hdr.int_shim.int_total_length;
         transition accept;
     }
 } // end of IngressParserImpl
@@ -60,14 +63,8 @@ control IngressDeparserImpl(packet_out buffer,
 {
 
     apply {
-        // Assignments to the out parameter normal_meta must be
-        // guarded by this if condition:
-        // if (psa_normal(istd)) {
-        //     normal_meta = meta;
-        // }
-
         /* 
-        umeta carries user metadata to the egress 
+        umeta is adummy header that carries user metadata to the egress 
         this header is then removed from the packet.
         */
         buffer.emit(hdr.umeta);

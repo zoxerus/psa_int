@@ -149,7 +149,7 @@ header int_checksum_t {
 header int_metadata_stack_t {
     /* 
     it seems that NIKSS doesn't support varbit,
-    192 bits are enough to store the generated MD
+    128 bits are enough to store the generated MD
     stack for our application,
     */
     /* TODO: change to varbit or set the custom length */
@@ -157,13 +157,18 @@ header int_metadata_stack_t {
 }
 
 
-
+/*
+this is a dummy header to carry the user metadata fron the ingress
+to the egress, because copying the user metadata is not yet supported
+by the nikss switch.
+*/
+/* TODO: change to the use of metadata when is supported */
 header umeta_t {
     bit<1> isINTSink;
-    bit<1> markToCloneE2E;
-    bit<6> padding;
     bit<32> ingress_port;
     bit<64> ingress_timestamp;
+    /* padding is used to make the size of the header a multiple of 8 */
+    bit<7> padding;
 }
 
 
@@ -185,7 +190,14 @@ struct headers {
     */
     int_shim_hdr_t              int_shim;
     int_md_hdr_t                int_md;
+    /*
+    the metadata stack is used at the sink and it holds the metadata
+    inserted by the upstream nodes, it's emitted in the cloned packet
+    that goes to the collector and is removed from the original packet
+    that goes to the destination host.
+    */
     int_metadata_stack_t        int_data;
+
     /* INT metadata */
     int_node_id_t               int_node_id;
     int_l1_interfaces_t         int_l1_interfaces;

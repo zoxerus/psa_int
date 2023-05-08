@@ -8,37 +8,24 @@ control egress(inout headers hdr,
                in    psa_egress_input_metadata_t  istd,
                inout psa_egress_output_metadata_t ostd)
 {
-    // bit<64> one = 1;
-    // bit<16> two = 1;
-    // bit<8>  three = 1;
-
-
-    // Register < bit<64>, bit<64> >(1) tstamp;
-    // Register < bit<16>, bit<16> >(1) iplen;
-    // Register < bit<8>, bit<8> >(1) shim_len;
 
     apply {
-        // tstamp.write( one , hdr.umeta.ingress_timestamp );
         /* 
         Add the telemetry metadata to the packet according to the 
         instruction bitmap in the int_md header.
         */
         InsertMetadata.apply(hdr, meta, istd, ostd);
         /*
-        check if the packet is cloned to the collectoer, and
-        set the proper destination MAC and IP addresses.
+        in this application we are sending the cloned packet to the original
+        destination, while we are changing the destination of the original packet
+        to be sent to the collector.
         */
-
-
-
         if ( istd.packet_path == PSA_PacketPath_t.CLONE_I2E ){
-
+            /* set the lengths to exclude the added shim, int_md, and md_stack */
             hdr.ipv4.totallen = hdr.ipv4.totallen - (bit<16>) ((hdr.int_shim.int_total_length + 1) << 2);
-            // iplen.write( two, hdr.ipv4.totallen );
-
-            // shim_len.write( three, hdr.int_shim.int_total_length);
             hdr.udp.length_ = hdr.udp.length_ - (bit<16>) ((hdr.int_shim.int_total_length + 1) << 2) ;
 
+            /* invalidate all the irrelevant headers */
             hdr.int_shim.setInvalid();
             hdr.int_md.setInvalid();
             hdr.int_node_id.setInvalid();
@@ -54,6 +41,7 @@ control egress(inout headers hdr,
             hdr.int_data.setInvalid();
 
         } else { 
+            /* if packet is original and this node is a sink then forward it to the collector */
             if ( hdr.umeta.isValid() && hdr.umeta.isINTSink == 1w1 ){
 
                 /*
@@ -62,12 +50,9 @@ control egress(inout headers hdr,
                 */
                 hdr.ethernet.dstAddr = 94687117444112;
                 hdr.ipv4.dstAddr = 0xa00040a;
-
             }
         }
-
-
-
+        /* invalidate the umeta header, this probably is suncessary */
         hdr.umeta.setInvalid();
      }
 } // end of egress

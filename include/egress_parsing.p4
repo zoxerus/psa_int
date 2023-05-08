@@ -13,8 +13,6 @@ parser EgressParserImpl(packet_in buffer,
                         in empty_t clone_e2e_meta)
 {   
 
-
-
     state start {
 
         transition select (istd.packet_path){
@@ -24,6 +22,11 @@ parser EgressParserImpl(packet_in buffer,
         }
     }
 
+    /* 
+    parse the dummy header to get access to the user metadata,
+    this header is used instead of the normal_meta due to limitations
+    with the NIKSS switch.
+    */
     state parse_umeta{
         buffer.extract(parsed_hdr.umeta);
         transition select(){
@@ -33,6 +36,7 @@ parser EgressParserImpl(packet_in buffer,
 
 
     state parse_ethernet {
+        /* extract ethernet header */
         buffer.extract(parsed_hdr.ethernet);
         transition select(parsed_hdr.ethernet.etherType) {
             ETH_TYPE_IPV4:  parse_ipv4;
@@ -41,6 +45,7 @@ parser EgressParserImpl(packet_in buffer,
     }
 
     state parse_ipv4 {
+        /* extract ipv4 header */
         buffer.extract(parsed_hdr.ipv4);
         transition select(parsed_hdr.ipv4.protocol){
             IP_PROTO_UDP:   parse_udp;
@@ -49,6 +54,7 @@ parser EgressParserImpl(packet_in buffer,
     }
 
     state parse_udp {
+        /* extract udp header */
         buffer.extract(parsed_hdr.udp);
         transition select(parsed_hdr.ipv4.dscp){
             DSCP_INT: parse_int;
@@ -56,8 +62,17 @@ parser EgressParserImpl(packet_in buffer,
         }
     }
     state parse_int {
+        /* extract the shim and int metadata headers */
         buffer.extract(parsed_hdr.int_shim);
         buffer.extract(parsed_hdr.int_md);
+        /*
+        determine if this node is a sink from the remaining hop count in the
+        INT MD header, if the remaining is one then this is the last node
+        and must play the sink role. here we use this method of determining
+        the sink role, because there is no way with NIKSS switch to carry
+        metadata from ingress to egress for the cloned packets not even with 
+        the dummy header.
+        */
         transition select(parsed_hdr.int_md.remaining_hop_count){
             1 : parse_int_sink;
             default : accept;
@@ -66,29 +81,9 @@ parser EgressParserImpl(packet_in buffer,
 
     state parse_int_sink {
         buffer.extract(parsed_hdr.int_data);
-        // buffer.extract(parsed_hdr.int_shim);
-        // buffer.extract(parsed_hdr.int_md);
-        // /* int_total_length doesn't include the shim header (1 word) */
-        // // meta.int_shim_len = parsed_hdr.int_shim.int_total_length;
-        // transition select(parsed_hdr.umeta.isINTSink){
-        //     1w1 : parse_int_data;
-        //     default : accept; }
-
         transition accept;
 
     }
-
-    // state parse_int_data{
-    //     /* 
-    //     extract the INT metadata included after the int_md header
-    //     length of extraction is calculated from the int_shim_len 
-    //     as it is measured in words, minus 4 which is the length of
-    //     the int_md header then left-shifted by five equal to multiplying
-    //     by 32 to convert from words to bits. 
-    //     */
-    //     buffer.extract(parsed_hdr.int_data);
-    //     transition accept;
-    // }
 
 } // end of EgressParserImpl
 
@@ -105,11 +100,17 @@ control EgressDeparserImpl(packet_out buffer,
 {
 
     apply {
+        /* first emit the normal packet headers */
         buffer.emit(hdr.ethernet);
         buffer.emit(hdr.ipv4);
         buffer.emit(hdr.udp);
+        /* for INT packets emit the shim and int_md headers */
         buffer.emit(hdr.int_shim);
         buffer.emit(hdr.int_md);
+        /* 
+        emit any metadata collected by the node based on the 
+        instruction bitmap
+        */
         buffer.emit(hdr.int_node_id);
         buffer.emit(hdr.int_l1_interfaces);
         buffer.emit(hdr.int_hop_latency);
@@ -120,6 +121,7 @@ control EgressDeparserImpl(packet_out buffer,
         buffer.emit(hdr.int_egress_tx);
         buffer.emit(hdr.int_buffer_info);
         buffer.emit(hdr.int_checksum);
+        /* emit the metadata stack from upstream nodes in the network */
         buffer.emit(hdr.int_data);
     }
 }

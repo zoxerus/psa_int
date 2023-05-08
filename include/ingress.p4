@@ -9,15 +9,6 @@ control ingress(inout headers hdr,
                 in    psa_ingress_input_metadata_t  istd,
                 inout psa_ingress_output_metadata_t ostd)
 {
-    /*
-    a register for testing if metadata is transfered to the egress,
-    to be deleted 
-    */
-    /* TODO: delete this register  */
-    // bit<64> one = 1;
-    // Register < bit<64>, bit<64> >(1) reg_tstamp;
-
-
 
     DirectCounter<bit<32>>(PSA_CounterType_t.PACKETS) int_src_counter;
     DirectCounter<bit<32>>(PSA_CounterType_t.PACKETS) forward_counter;
@@ -29,11 +20,14 @@ control ingress(inout headers hdr,
     action do_forward(PortId_t egress_port, EthernetAddress srcAddr,
      EthernetAddress dstAddr) {
 
+        /* increase packet counter by one */
         forward_counter.count();
 
-        /* record ingress timestamp_t for INT processing */
-        meta.ingress_timestamp = (bit<64>) istd.ingress_timestamp;
-
+        /* 
+        Carrying the user metadata in a dummy header instead of the usual struct
+        due to limitation in the ability to copy the user metedata struct from ingress
+        to egress.
+        */
         /* TODO: decide wheter to keep or remove this */
         hdr.umeta.ingress_timestamp = (bit<64>) istd.ingress_timestamp;
         hdr.umeta.ingress_port =  (bit<32>) istd.ingress_port;
@@ -60,16 +54,14 @@ control ingress(inout headers hdr,
 
             ) 
         {
-        /* 
-        Indicate that this is node is source node for INT-MD
-        used two types of metadata for experimental reasons,
-        */
-        // TODO: Remove redundant metadata.
-        // meta.isSource = true;
-
+        
+        /* increase INT source counter by one */
         int_src_counter.count();
 
-        /* as this is a source INT, add the shim header */
+        /* 
+        as this is a source INT, add the shim header and set
+        the relevant values 
+        */
         hdr.int_shim.setValid();
         hdr.int_shim.int_type = 1;
         hdr.int_shim.next_protocol = 0;
@@ -77,6 +69,10 @@ control ingress(inout headers hdr,
         hdr.int_shim.int_total_length = 3;
         hdr.int_shim.udp_ip_dscp = ( (bit<16>) hdr.ipv4.dscp ) << 2;
 
+        /* 
+        Setting the DSCP field to indicate for downstream nodes
+        that this packet is carrying INT data.
+        */
         hdr.ipv4.dscp = DSCP_INT;
 
         /* add the INT-MD metadata header */
@@ -105,6 +101,10 @@ control ingress(inout headers hdr,
         hdr.int_md.domain_specific_instruction = 0;
         hdr.int_md.domains_specific_flags = 0;
 
+        /*
+        increase UDP and IPv4 lengths by 16 bytes 
+        (4 bytes shim, and 12 bytes INT header)
+        */
         hdr.udp.length_ = hdr.udp.length_ + 16w16;
         hdr.ipv4.totallen = hdr.ipv4.totallen + 16w16;
 
@@ -112,11 +112,14 @@ control ingress(inout headers hdr,
 
     action set_sink(CloneSessionId_t csi, PortId_t port){
         int_sink_counter.count();
-        // meta.isSink = true;
 
+        /*
+        setting a flag in the dummy header to indicate that this
+        node is a sink node for the INT.
+        */
         hdr.umeta.isINTSink = 1w1;
-        // hdr.umeta.markToCloneE2E = 1w1;
 
+        /* mark the packet to be cloned to the egress */
         ostd.clone = true;
         ostd.clone_session_id = csi;
         send_to_port(ostd, port);
@@ -160,14 +163,17 @@ control ingress(inout headers hdr,
     }
 
     apply {
+        /* header must be made valid to be emitted in the deparser */
         hdr.umeta.setValid();
-        hdr.umeta.padding = 6w0;
         if (tbl_fwd.apply().hit) {
             /* 
             tbl_role_source: detect if node is a source for INT,
             set the relevant metadata and add the shim header.
             */
             tbl_role_source.apply();
+            /*
+            detect if node is an INT sink, to clone the packet I2E
+            */
             tbl_role_sink.apply();
         }
     }

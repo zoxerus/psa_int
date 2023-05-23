@@ -56,7 +56,7 @@ parser IngressParserImpl(packet_in buffer,
 control IngressDeparserImpl(packet_out buffer,
                             out empty_t clone_i2e_meta,
                             out empty_t resubmit_meta,
-                            out metadata normal_meta,
+                            out empty_t normal_meta,
                             inout headers hdr,
                             in metadata meta,
                             in psa_ingress_output_metadata_t istd)

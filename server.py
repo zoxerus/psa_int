@@ -25,7 +25,7 @@ def get_if():
 x = 0
 def handle_pkt(pkt):
     global x
-    telemetryPacketLengthInBytes = 8
+    telemetryPacketLengthInBytes = 12
     l = telemetryPacketLengthInBytes
     if UDP in pkt and pkt[UDP].dport == 12345:
         # pkt.show2()
@@ -62,8 +62,11 @@ def handle_pkt(pkt):
             n = l*i
 
             print('Node_ID:\t\t{}.{}.{}.{}'.format( data[0+n],data[1+n],data[2+n],data[3+n]))
+            
+            print('In Port:\t\t{} '.format( int.from_bytes(data[4+n:6+n], byteorder='big' ) ))
+            print('Eg Port:\t\t{} '.format( int.from_bytes(data[6+n:8+n], byteorder='big' ) ))
 
-            print('Latency:\t\t{} ms'.format( int.from_bytes(data[4+n:8+n], byteorder='big' )/1000 ))
+            print('Latency:\t\t{} us'.format( int.from_bytes(data[8+n:13+n], byteorder='big' )/1000 ))
 
  
             print('\n')

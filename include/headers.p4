@@ -165,10 +165,12 @@ by the nikss switch.
 /* TODO: change to the use of metadata when is supported */
 header umeta_t {
     bit<1> isINTSink;
-    bit<32> ingress_port;
-    bit<64> ingress_timestamp;
     /* padding is used to make the size of the header a multiple of 8 */
     bit<7> padding;
+    bit<32> ingress_port;
+    bit<64> ingress_timestamp;
+
+
 }
 
 

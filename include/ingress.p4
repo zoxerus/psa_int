@@ -128,9 +128,10 @@ control ingress(inout headers hdr,
     /* Table for detecting if this is an INT source */
     table tbl_role_source{
         key = {
-            hdr.ipv4.srcAddr    : exact;
-            hdr.udp.srcPort     : exact;
-            istd.ingress_port   : exact;
+            hdr.int_shim.isValid() : exact;
+            hdr.ipv4.srcAddr       : exact;
+            hdr.udp.srcPort        : exact;
+            istd.ingress_port      : exact;
         }
         actions = {set_source; NoAction;}
         default_action = NoAction;
@@ -141,9 +142,10 @@ control ingress(inout headers hdr,
     /* Table for detecting if this is an INT sink */
     table tbl_role_sink{
         key = {
-            hdr.ipv4.dstAddr    : exact;
-            hdr.udp.srcPort     : exact;
-            ostd.egress_port    : exact;
+            hdr.int_shim.isValid()  : exact;
+            hdr.ipv4.dstAddr      : exact;
+            hdr.udp.srcPort       : exact;
+            ostd.egress_port      : exact;
         }
         actions = {set_sink; NoAction;}
         default_action = NoAction;

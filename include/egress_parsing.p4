@@ -8,7 +8,7 @@ parser EgressParserImpl(packet_in buffer,
                         out headers parsed_hdr,
                         inout metadata meta,
                         in psa_egress_parser_input_metadata_t istd,
-                        in metadata normal_meta,
+                        in empty_t normal_meta,
                         in empty_t clone_i2e_meta,
                         in empty_t clone_e2e_meta)
 {   

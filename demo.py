@@ -141,9 +141,9 @@ def main():
     s1.cmd("nikss-ctl table add pipe 0 ingress_tbl_fwd action id 1 key {} data {} {} {}".format(h3.IP(), socket.if_nametoindex("s1-eth2"),
                                                                                                 "56:1E:10:00:12:01", "56:1E:10:00:12:02"))
     # Entries for S1 tbl_role_source
-    s1.cmd("nikss-ctl table add pipe 0 ingress_tbl_role_source action id 1 key {0} {1} {2} data {3} {4} {5} {6} {7} {8}".format(h1.IP(),
+    s1.cmd("nikss-ctl table add pipe 0 ingress_tbl_role_source action id 1 key 0 {0} {1} {2} data {3} {4} {5} {6} {7} {8}".format(h1.IP(),
                             "11111", socket.if_nametoindex("s1-eth1"), 
-                            "2", "3", "10", "0", "0", "0"))
+                            "3", "3", "14", "0", "0", "0"))
     
     # Entries for S1 tbl_role_source
     s1.cmd("nikss-ctl table add pipe 0 egress_InsertMetadata_tb_int_insert action id 1 key 1 data 1.1.1.1")
@@ -188,7 +188,7 @@ def main():
     # Entries for S3 Sink Telemetry
     s3.cmd("nikss-ctl clone-session create pipe 2 id 128")
     s3.cmd("nikss-ctl clone-session add-member pipe 2 id 128 egress-port {} instance 0".format(socket.if_nametoindex("s3-eth1") ))
-    s3.cmd("nikss-ctl table add pipe 2 ingress_tbl_role_sink action id 1 key {0} {1} {2} data {3} {4}".format(h3.IP(),
+    s3.cmd("nikss-ctl table add pipe 2 ingress_tbl_role_sink action id 1 key 1 {0} {1} {2} data {3} {4}".format(h3.IP(),
                             "11111", socket.if_nametoindex("s3-eth1"), "128", socket.if_nametoindex("s3-eth2") ))   
 
     CLI( net )

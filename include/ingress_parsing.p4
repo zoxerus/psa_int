@@ -14,6 +14,9 @@ parser IngressParserImpl(packet_in buffer,
                          in empty_t recirculate_meta)
 {
     state start {
+        /* record packet length */
+        meta.packet_length = buffer.length();
+        
         /* extract ethernet header */
         buffer.extract(parsed_hdr.ethernet);
         transition select(parsed_hdr.ethernet.etherType) {
@@ -43,8 +46,8 @@ parser IngressParserImpl(packet_in buffer,
 
     state parse_int {
         /* extract the shim header and INT metadata header */
-        buffer.extract(parsed_hdr.int_shim);
-        buffer.extract(parsed_hdr.int_md);
+        buffer.extract(parsed_hdr.int_custom_shim);
+        // buffer.extract(parsed_hdr.int_custom_md);
         transition accept;
     }
 } // end of IngressParserImpl
@@ -67,13 +70,13 @@ control IngressDeparserImpl(packet_out buffer,
         umeta is adummy header that carries user metadata to the egress 
         this header is then removed from the packet.
         */
-        buffer.emit(hdr.umeta);
+        // buffer.emit(hdr.umeta);
 
         buffer.emit(hdr.ethernet);
         buffer.emit(hdr.ipv4);
         buffer.emit(hdr.udp);
-        buffer.emit(hdr.int_shim);
-        buffer.emit(hdr.int_md);
+        buffer.emit(hdr.int_custom_shim);
+        buffer.emit(hdr.int_custom_md);
     }
 }
 

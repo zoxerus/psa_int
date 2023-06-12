@@ -32,17 +32,20 @@ struct metadata {
     including int_md_header excluding the shim header.
     */
     // bit<16> intShimLength;
-    bool isSource;
-    bool isTransit;
+    // bool isTrackedFlow;
     bit<1> isSink;
-    bool isClone;
-    bit<1> intSink;
-    PortId_t ingress_port;
-    NodeID node_id;
-    bit<64> ingress_timestamp;
-    bit<16> new_bytes;
-    bit<8>  new_words;
-    bit<8>  int_shim_len;
+    // bool isSource;
+    // bool isTransit;
+    // bit<1> isSink;
+    // bool isClone;
+    // bit<1> intSink;
+    // bit<16> egress_port;
+    // bit<32> node_id;
+    // bit<64> ingress_timestamp;
+    // bit<16> new_bytes;
+    // bit<8>  new_words;
+    // bit<8>  int_shim_len;
+    bit<32> packet_length;
 }
 
 

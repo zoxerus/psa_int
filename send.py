@@ -43,11 +43,14 @@ def main():
     pkt =  Ether(src=get_if_hwaddr(iface), dst='56:1e:10:00:03:10')
     pkt = pkt /IP(dst=addr, tos =0) / UDP(dport=int(sys.argv[4]) , sport= int(sys.argv[2]) ) / sys.argv[1]
     #pkt.show2()
+    t0 = time.time()
+    i = 0
     for i in range(int(sys.argv[5] )):
         sendp(pkt, iface=iface, verbose=False)
         time.sleep(float(sys.argv[6]))
-        print("\rSent {0} Packets".format(i+1),end = "")
-    print("")
+    dt = time.time() - t0
+    print("\rSent {0} Packets in {1} seconds, \n rate is {2}".format(i+1, dt, (i+1)/dt))
+    
 
 
 if __name__ == '__main__':

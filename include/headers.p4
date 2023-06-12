@@ -162,6 +162,8 @@ header int_custom_shim_t{
     bit<8> remaining_int_hops; 
     bit<8> flow_id;
 }
+#define SHIM_HDR_LEN_BYTES 4
+
 
 header int_custom_md_header_t {
     bit<32> node_id;
@@ -169,12 +171,29 @@ header int_custom_md_header_t {
     bit<16> egress_interface;
     bit<64> ingress_timestamp;
     bit<64> egress_timestamp;
-    bit<64> flow_byte_count;
-    bit<32> flow_packet_count;
+
+    /* in port flow-specific counters */
+    bit<64> in_port_flow_byte_count;
+    bit<32> in_port_flow_packet_count;
+
+    /* in port generic counters */
+    bit<64> in_port_byte_count;
+    bit<32> in_port_packet_count;
+
+    /* out port flow-specific counters */
+    bit<64> out_port_flow_byte_count;
+    bit<32> out_port_flow_packet_count;
+
+    /* out port generic counters */
+    bit<64> out_port_byte_count;
+    bit<32> out_port_packet_count;
 }
+#define MD_HDR_LEN_BITS 576
+#define MD_HDR_LEN_BYTES 72
+#define MD_HDR_LEN_WORDS 18
+#define MD_STACK_LEN_BITS 1728
 
 /***********************************/
-
 
 header int_metadata_stack_t {
     /* 
@@ -192,7 +211,7 @@ header int_metadata_stack_t {
               288   *   3      = 576 bits
     */
     /* TODO: change to varbit or set the custom length */
-    bit<864> metadata_stack;
+    bit<MD_STACK_LEN_BITS> metadata_stack;
 }
 
 

@@ -14,7 +14,7 @@ parser EgressParserImpl(packet_in buffer,
 {   
 
     state start {
-
+        meta.packet_length = buffer.length();
         transition select (istd.packet_path){
             PSA_PacketPath_t.CLONE_E2E : parse_clone;
             PSA_PacketPath_t.NORMAL : parse_ethernet;
